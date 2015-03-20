@@ -1,16 +1,18 @@
 "use strict"
-var fs = require("fs")
-var path = require("path")
+const MIN_SIZE = 100
 
-var async = require("async")
-var log = require("npmlog")
-var iferr = require("iferr")
+const fs = require("fs")
+const path = require("path")
 
-var checksum = require("./checksum.js")
-var limit = require("./calllimit.js")
+const async = require("async")
+const log = require("npmlog")
+const iferr = require("iferr")
 
-var lstat = limit(fs.lstat, 5)
-var readdir = limit(fs.readdir, 5)
+const checksum = require("./checksum.js")
+const limit = require("./calllimit.js")
+
+const lstat = limit(fs.lstat, 5)
+const readdir = limit(fs.readdir, 5)
 
 function rawRelink(from, to, cb) {
   log.warn("relink", "from", from, "to", to)
@@ -18,14 +20,13 @@ function rawRelink(from, to, cb) {
     fs.link(from, to, cb)
   })
 }
-var relink = limit(rawRelink, 1)
+const relink = limit(rawRelink, 1)
 
 
-var filecache = {}
-var inodecache = {}
-var hashcache = {}
+const inodecache = {}
+const hashcache = {}
 
-var dedupe = module.exports = function (dir, cb) {
+const dedupe = module.exports = function (dir, cb) {
   log.verbose("dedupeDir", dir)
   readdir(dir, iferr(cb, function (files) { dedupeFiles(dir, files, cb) }))
 }
@@ -38,17 +39,16 @@ function logError (cb) {
 }
 
 function dedupeFiles (dir,files,cb) {
-  var tracker = log.newItem(path.basename(dir), files.length)
-  var newFiles = files.filter(function (file) { return ! filecache[path.join(dir, file)] })
-  var dirs = []
-  async.each(newFiles, statAndProcessFile, recurseIntoDirs)
-  var fullpath
+  const tracker = log.newItem(path.basename(dir), files.length)
+  const dirs = []
+  async.each(files, statAndProcessFile, recurseIntoDirs)
+  let fullpath
   function statAndProcessFile (file, done) {
-    var nextFile = function () {
+    const nextFile = function () {
       tracker.completeWork(1)
       done.apply(null, arguments)
     }
-    var fullpath = path.join(dir, file)
+    const fullpath = path.join(dir, file)
     log.silly("statAndProcessFile", file)
     lstat(fullpath, iferr(logError(nextFile), processFile))
     function processFile (info) {
@@ -56,15 +56,18 @@ function dedupeFiles (dir,files,cb) {
         dirs.push(fullpath)
         return nextFile()
       }
-      // weird stuff we don't try
-      if (info.isBlockDevice() || info.isCharacterDevice() || info.isSymbolicLink() || info.isFIFO() || info.isSocket()) {
+      // don't try to hard link non-plain files
+      if (!info.isFile() || info.isBlockDevice() || info.isCharacterDevice() || info.isSymbolicLink() || info.isFIFO() || info.isSocket()) {
+        return nextFile()
+      }
+      if (info.size < MIN_SIZE) {
         return nextFile()
       }
       if (inodecache[info.ino]) {
         inodecache[info.ino].paths.push(fullpath)
         return nextFile()
       }
-      var fileobj = filecache[fullpath] = {
+      const fileobj = {
         paths: [fullpath],
         stat: info
       }
@@ -83,7 +86,7 @@ function dedupeFiles (dir,files,cb) {
       
       // else it IS a file obj, compute ITS hash
       // then compute OUR hash, then compare
-      var prev = hashcache[info.size]
+      const prev = hashcache[info.size]
       hashcache[info.size] = {}
       checksum(prev.paths[0], function (er, sum) {
         if (er) {
@@ -97,7 +100,7 @@ function dedupeFiles (dir,files,cb) {
       function checkHash(fileobj, nextFile) {
         checksum(fileobj.paths[0], iferr(logError(nextFile), function (sum) {
           // if there's a collision we'll link
-          var existing = hashcache[info.size][sum]
+          const existing = hashcache[info.size][sum]
           if (! existing) {
             log.silly("checkHash", "found size not sum match", fileobj.paths[0], hashcache[info.size])
             hashcache[info.size][sum] = fileobj

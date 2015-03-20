@@ -1,26 +1,26 @@
 "use strict"
-var fs = require("fs")
+const fs = require("fs")
 
-var adler32 = require("adler-32")
-var crc32 = require("crc-32")
+const adler32 = require("adler-32")
+const crc32 = require("crc-32")
 
 function combinedsum (buffer, size) {
   return adler32.buf(buffer.slice(0, size)) +
          crc32.buf(buffer.slice(0, size))
 }
 
-var limit = require("./calllimit.js")
+const limit = require("./calllimit.js")
 
 module.exports = limit(checksum, 1)
 
-var MB = 1024*1024
-var forwardbuf = new Buffer(1*MB)
-var rearbuf = new Buffer(1*MB)
+const MB = 1024*1024
+const forwardbuf = new Buffer(1*MB)
+const rearbuf = new Buffer(1*MB)
 
 function checksum (file, cb) {
   fs.open(file, 'r', readForwardChunk);
-  var fd
-  var forwardsum
+  let fd
+  let forwardsum
   function readForwardChunk (er, newfd) {
     if (er) return cb(er)
     fd = newfd
@@ -34,11 +34,11 @@ function checksum (file, cb) {
   }
   function handleRearChunk (er, rearSize) {
     if (er) return andClose(er)
-    var rearsum = combinedsum(rearbuf, rearSize)
+    const rearsum = combinedsum(rearbuf, rearSize)
     return andClose(null, forwardsum + rearsum)
   }
   function andClose() {
-    var args = arguments
+    const args = arguments
     fs.close(fd, function (er) {
       cb.apply(null, args)
     })
