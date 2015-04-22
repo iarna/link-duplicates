@@ -1,24 +1,25 @@
 {
-  "name": "dupelinker",
+  "name": "link-duplicates",
   "version": "1.0.0",
   "description": "Detect duplicate files and hard link them",
   "main": "index.js",
   "bin": {
-    "dupelinker": "cli.js"
+    "link-duplicates": "cli.js"
   },
   "scripts": {
+    "prepublish": "babel link-duplicates.js calllimit.js checksum.js --out-dir es5",
     "test": "tap test/*.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/iarna/dupelinker"
+    "url": "https://github.com/iarna/link-duplicates"
   },
   "author": "Rebecca Turner <me@re-becca.org>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/iarna/dupelinker/issues"
+    "url": "https://github.com/iarna/link-duplicates/issues"
   },
-  "homepage": "https://github.com/iarna/dupelinker",
+  "homepage": "https://github.com/iarna/link-duplicates",
   "dependencies": {
     "adler-32": "^0.2.1",
     "async": "^0.9.0",
@@ -27,9 +28,10 @@
     "npmlog": "^1.2.0"
   },
   "devDependencies": {
+    "babel": "^5.0.2",
     "tap": "^0.7.1"
   },
   "engine": {
-    "node": "^1.0.0"
+    "node": ">=0.10.x"
   }
 }
