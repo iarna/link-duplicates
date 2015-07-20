@@ -9,7 +9,7 @@ function combinedsum (buffer, size) {
          crc32.buf(buffer.slice(0, size))
 }
 
-const limit = require("./calllimit.js")
+const limit = require("call-limit")
 
 module.exports = limit(checksum, 1)
 

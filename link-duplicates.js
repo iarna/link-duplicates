@@ -9,7 +9,7 @@ const log = require("npmlog")
 const iferr = require("iferr")
 
 const checksum = require("./checksum.js")
-const limit = require("./calllimit.js")
+const limit = require("call-limit")
 
 const lstat = limit(fs.lstat, 5)
 const readdir = limit(fs.readdir, 5)
